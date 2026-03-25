@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_vpc" "shadows" {
-  cidr_block       = var.vpc_cidr
+  cidr_block       = "10.0.90.0/16"
   instance_tenancy = "default"
 
   tags = {
