@@ -6,7 +6,7 @@ terraform {
     #use_lockfile = true
   }
 }
-
+ 
 
 
 resource "aws_vpc" "shadows" {
