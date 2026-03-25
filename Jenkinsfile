@@ -109,6 +109,7 @@ pipeline {
                     aws sts get-caller-identity
                     terraform plan
                 '''
+              }
             }
         }
     }
