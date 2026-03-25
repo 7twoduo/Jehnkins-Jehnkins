@@ -24,7 +24,7 @@ pipeline {
             }
         }
 
-        stage('Verify Tools') {
+        stage('Build - Verify Tools') {
             steps {
                 sh '''
                     set -eux
@@ -35,7 +35,7 @@ pipeline {
             }
         }
 
-        stage('Terraform Init') {
+        stage('Test - Terraform Init') {
             steps {
                 sh '''
                     set -eux
@@ -44,7 +44,7 @@ pipeline {
             }
         }
 
-        stage('Terraform Validate') {
+        stage('Test - Terraform Validate') {
             steps {
                 sh '''
                     set -eux
@@ -53,7 +53,7 @@ pipeline {
             }
         }
 
-        stage('Snyk Code') {
+        stage('Security - Snyk Code') {
             steps {
                 sh '''
                     set +e
@@ -71,7 +71,7 @@ pipeline {
             }
         }
 
-        stage('Snyk IaC') {
+        stage('Security - Snyk IaC') {
             steps {
                 sh '''
                     set -eux
@@ -80,7 +80,7 @@ pipeline {
             }
         }
 
-        stage('Snyk OSS') {
+        stage('Security - Snyk OSS') {
             steps {
                 sh '''
                     set +e
@@ -98,7 +98,7 @@ pipeline {
             }
         }
 
-        stage('Terraform Plan') {
+        stage('Plan - Terraform Plan') {
             when {
                 expression { params.RUN_PLAN }
             }
@@ -117,6 +117,9 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed.'
+        }
+        always {
+            echo 'Pipeline execution finished.'
         }
     }
 }
