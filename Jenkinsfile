@@ -56,6 +56,7 @@ pipeline {
                     expression { params.RUN_PLAN }
                     expression { params.RUN_APPLY }
                     triggeredBy 'GitHubPushTrigger'
+                    triggeredBy 'GitHubPushCause'
                 }
             }
             steps {
@@ -73,6 +74,7 @@ pipeline {
             when {
                 anyOf {
                     expression { params.RUN_APPLY }
+                    triggeredBy 'GitHubPushCause'
                     triggeredBy 'GitHubPushTrigger'
                 }
             }
@@ -85,6 +87,7 @@ pipeline {
             when {
                 anyOf {
                     expression { params.RUN_APPLY }
+                    triggeredBy 'GitHubPushCause'
                     triggeredBy 'GitHubPushTrigger'
                 }
             }
