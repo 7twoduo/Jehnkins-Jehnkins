@@ -27,7 +27,6 @@ pipeline {
             steps {
                 checkout scm
                 sh 'terraform version'
-                // Init with backend=false for a quick validation/scan check
                 sh 'terraform init -backend=false -input=false'
                 sh 'terraform validate'
             }
@@ -68,9 +67,9 @@ pipeline {
 
         stage('Manual Approval') {
             when {
-                allOf {
+                anyOf {
                     expression { params.RUN_APPLY }
-                    expression { !params.AUTO_APPROVE }
+                    triggeredBy 'GitHubPushTrigger'
                 }
             }
             steps {
@@ -80,7 +79,10 @@ pipeline {
 
         stage('Terraform Apply') {
             when {
-                expression { params.RUN_APPLY }
+                anyOf {
+                    expression { params.RUN_APPLY }
+                    triggeredBy 'GitHubPushTrigger'
+                }
             }
             steps {
                 withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
@@ -95,7 +97,6 @@ pipeline {
 
     post {
         always {
-            // Clean up the plan file and results
             archiveArtifacts artifacts: 'tfplan', allowEmptyArchive: true
             deleteDir()
         }
