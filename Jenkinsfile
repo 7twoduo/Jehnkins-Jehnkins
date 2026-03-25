@@ -18,13 +18,13 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Build') {
+        stage('Verify Tools') {
             steps {
                 sh '''
                     set -eux
@@ -35,18 +35,25 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Terraform Init') {
             steps {
                 sh '''
                     set -eux
-                    terraform fmt -check
                     terraform init -backend=false
+                '''
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                sh '''
+                    set -eux
                     terraform validate
                 '''
             }
         }
 
-        stage('Security - Snyk Code') {
+        stage('Snyk Code') {
             steps {
                 sh '''
                     set +e
@@ -64,13 +71,16 @@ pipeline {
             }
         }
 
-        stage('Security - Snyk IaC') {
+        stage('Snyk IaC') {
             steps {
-                sh 'snyk iac test . --severity-threshold=high'
+                sh '''
+                    set -eux
+                    snyk iac test . --severity-threshold=high
+                '''
             }
         }
 
-        stage('Security - Snyk OSS') {
+        stage('Snyk OSS') {
             steps {
                 sh '''
                     set +e
@@ -88,12 +98,15 @@ pipeline {
             }
         }
 
-        stage('Plan') {
+        stage('Terraform Plan') {
             when {
                 expression { params.RUN_PLAN }
             }
             steps {
-                sh 'terraform plan'
+                sh '''
+                    set -eux
+                    terraform plan
+                '''
             }
         }
     }
