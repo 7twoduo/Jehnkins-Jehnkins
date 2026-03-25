@@ -103,8 +103,10 @@ pipeline {
                 expression { params.RUN_PLAN }
             }
             steps {
+              withAWS(credentials: 'aws-prod', region: 'us-east-1') {
                 sh '''
                     set -eux
+                    aws sts get-caller-identity
                     terraform plan
                 '''
             }
