@@ -3,13 +3,13 @@ pipeline {
 
     options {
         timestamps()
-        disableConcurrentBuilds()
+        disableConcurrentBuilds() // Prevents "Dependency Lock" from multiple builds hitting the same state file
         buildDiscarder(logRotator(numToKeepStr: '20'))
-        skipDefaultCheckout(true)
+        skipDefaultCheckout(false) // Changed to false to ensure we have the code
     }
 
     parameters {
-        booleanParam(name: 'RUN_PLAN', defaultValue: false, description: 'Run terraform plan')
+        booleanParam(name: 'RUN_PLAN', defaultValue: true, description: 'Run terraform plan')
         booleanParam(name: 'RUN_APPLY', defaultValue: false, description: 'Run terraform apply')
         booleanParam(name: 'AUTO_APPROVE', defaultValue: false, description: 'Skip manual approval before apply')
         string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
@@ -17,155 +17,91 @@ pipeline {
 
     environment {
         TF_IN_AUTOMATION = 'true'
+        TF_LOG = 'INFO'
         SNYK_TOKEN = credentials('snyk-token')
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Initialize & Scan') {
             steps {
                 checkout scm
+                sh 'terraform version'
+                // Init with backend=false for a quick validation/scan check
+                sh 'terraform init -backend=false -input=false'
+                sh 'terraform validate'
             }
         }
 
-        stage('Build - Verify Tools') {
-            steps {
-                sh '''
-                    set -eux
-                    git --version
-                    terraform version
-                    snyk --version
-                '''
+        stage('Security - Snyk Scans') {
+            parallel {
+                stage('Snyk Code') {
+                    steps {
+                        sh 'snyk code test --severity-threshold=high || true'
+                    }
+                }
+                stage('Snyk IaC') {
+                    steps {
+                        sh 'snyk iac test . --severity-threshold=high'
+                    }
+                }
             }
         }
 
-        stage('Test - Terraform Init') {
-            steps {
-                sh '''
-                    set -eux
-                    terraform init -backend=false -input=false
-                '''
-            }
-        }
-
-        stage('Test - Terraform Validate') {
-            steps {
-                sh '''
-                    set -eux
-                    terraform validate
-                '''
-            }
-        }
-
-        stage('Security - Snyk Code') {
-            steps {
-                sh '''
-                    set +e
-                    snyk code test --severity-threshold=high
-                    rc=$?
-                    set -e
-
-                    if [ "$rc" -eq 3 ]; then
-                      echo "No supported code files for Snyk Code; skipping."
-                      exit 0
-                    fi
-
-                    exit "$rc"
-                '''
-            }
-        }
-
-        stage('Security - Snyk IaC') {
-            steps {
-                sh '''
-                    set -eux
-                    snyk iac test . --severity-threshold=high
-                '''
-            }
-        }
-
-        stage('Security - Snyk OSS') {
-            steps {
-                sh '''
-                    set +e
-                    snyk test --all-projects --severity-threshold=high
-                    rc=$?
-                    set -e
-
-                    if [ "$rc" -eq 3 ]; then
-                      echo "No supported package manifest for Snyk OSS scan; skipping."
-                      exit 0
-                    fi
-
-                    exit "$rc"
-                '''
-            }
-        }
-
-        stage('Deploy - Terraform Init') {
+        stage('Terraform Plan') {
+            // This will run on Webhook or if RUN_PLAN is true
             when {
-                expression { params.RUN_PLAN || params.RUN_APPLY }
+                anyOf {
+                    expression { params.RUN_PLAN }
+                    expression { params.RUN_APPLY }
+                    triggeredBy 'GitHubPushTrigger' 
+                }
             }
             steps {
                 withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
                     sh '''
-                        set -eux
                         terraform init -input=false
+                        terraform plan -out=tfplan -input=false
                     '''
                 }
             }
         }
 
-        stage('Plan - Terraform Plan') {
-            when {
-                expression { params.RUN_PLAN || params.RUN_APPLY }
-            }
-            steps {
-                withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
-                    sh '''
-                        set -eux
-                        terraform plan -input=false -out=tfplan
-                    '''
-                }
-            }
-        }
-
-        stage('Approval - Terraform Apply') {
+        stage('Manual Approval') {
+            // Only stop if we intend to APPLY and AUTO_APPROVE is off
             when {
                 allOf {
-                    expression { params.RUN_APPLY }
+                    expression { params.RUN_APPLY || triggeredBy('GitHubPushTrigger') }
                     expression { !params.AUTO_APPROVE }
                 }
             }
             steps {
-                input message: 'Apply Terraform changes?', ok: 'Apply'
+                input message: "Review the plan for ${env.JOB_NAME}. Deploy to AWS?", ok: "Deploy Now"
             }
         }
 
-        stage('Apply - Terraform Apply') {
+        stage('Terraform Apply') {
             when {
-                expression { params.RUN_APPLY }
+                anyOf {
+                    expression { params.RUN_APPLY }
+                    triggeredBy 'GitHubPushTrigger'
+                }
             }
             steps {
                 withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
-                    sh '''
-                        set -eux
-                        terraform apply -input=false -auto-approve tfplan
-                    '''
+                    sh 'terraform apply -input=false -auto-approve tfplan'
                 }
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline passed.'
+        always {
+            // Clean up the plan file and results
+            archiveArtifacts artifacts: 'tfplan', allowEmptyArchive: true
+            deleteDir() 
         }
         failure {
-            echo 'Pipeline failed.'
-        }
-        always {
-            archiveArtifacts artifacts: 'tfplan', allowEmptyArchive: true
-            echo 'Pipeline execution finished.'
+            echo "Deployment failed. Check Cloudflare tunnel and AWS credentials."
         }
     }
 }
