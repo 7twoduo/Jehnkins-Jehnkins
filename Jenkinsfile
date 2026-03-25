@@ -27,7 +27,9 @@ pipeline {
             steps {
                 checkout scm
                 sh 'terraform version'
-                sh 'terraform init'
+                withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
+                    sh 'terraform init'
+                }
                 sh 'terraform validate'
             }
         }
