@@ -4,9 +4,9 @@ pipeline {
 
     options {
         timestamps()
-        disableConcurrentBuilds() // Prevents "Dependency Lock" from multiple builds hitting the same state file
+        disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '20'))
-        skipDefaultCheckout(false) // Changed to false to ensure we have the code
+        skipDefaultCheckout(false)
     }
 
     parameters {
@@ -23,11 +23,11 @@ pipeline {
     }
 
     stages {
-        stage('Initialize & Scan') {
+        stage('Initialize & Validate') {
             steps {
                 checkout scm
                 sh 'terraform version'
-                sh 'terraform init -backend=false -input=false'
+                sh 'terraform init'
                 sh 'terraform validate'
             }
         }
@@ -39,6 +39,7 @@ pipeline {
                         sh 'snyk code test --severity-threshold=high || true'
                     }
                 }
+
                 stage('Snyk IaC') {
                     steps {
                         sh 'snyk iac test . --severity-threshold=high'
@@ -58,8 +59,9 @@ pipeline {
             steps {
                 withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
                     sh '''
-                        terraform init -input=false
-                        terraform plan -out=tfplan -input=false
+                        terraform init
+                        terraform plan -out=tfplan
+                        terraform show tfplan
                     '''
                 }
             }
@@ -87,8 +89,8 @@ pipeline {
             steps {
                 withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
                     sh '''
-                        terraform init -input=false
-                        terraform apply -input=false -auto-approve tfplan
+                        terraform init
+                        terraform apply -auto-approve tfplan
                     '''
                 }
             }
