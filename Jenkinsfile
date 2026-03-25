@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     options {
@@ -48,12 +49,11 @@ pipeline {
         }
 
         stage('Terraform Plan') {
-            // This will run on Webhook or if RUN_PLAN is true
             when {
                 anyOf {
                     expression { params.RUN_PLAN }
                     expression { params.RUN_APPLY }
-                    triggeredBy 'GitHubPushTrigger' 
+                    triggeredBy 'GitHubPushTrigger'
                 }
             }
             steps {
@@ -67,10 +67,9 @@ pipeline {
         }
 
         stage('Manual Approval') {
-            // Only stop if we intend to APPLY and AUTO_APPROVE is off
             when {
                 allOf {
-                    expression { params.RUN_APPLY || triggeredBy('GitHubPushTrigger') }
+                    expression { params.RUN_APPLY }
                     expression { !params.AUTO_APPROVE }
                 }
             }
@@ -81,14 +80,14 @@ pipeline {
 
         stage('Terraform Apply') {
             when {
-                anyOf {
-                    expression { params.RUN_APPLY }
-                    triggeredBy 'GitHubPushTrigger'
-                }
+                expression { params.RUN_APPLY }
             }
             steps {
                 withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
-                    sh 'terraform apply -input=false -auto-approve tfplan'
+                    sh '''
+                        terraform init -input=false
+                        terraform apply -input=false -auto-approve tfplan
+                    '''
                 }
             }
         }
@@ -98,7 +97,7 @@ pipeline {
         always {
             // Clean up the plan file and results
             archiveArtifacts artifacts: 'tfplan', allowEmptyArchive: true
-            deleteDir() 
+            deleteDir()
         }
         failure {
             echo "Deployment failed. Check Cloudflare tunnel and AWS credentials."
