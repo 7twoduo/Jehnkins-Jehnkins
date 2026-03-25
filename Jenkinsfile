@@ -9,7 +9,9 @@ pipeline {
     }
 
     parameters {
-        booleanParam(name: 'RUN_PLAN', defaultValue: false, description: 'Run terraform plan')
+        booleanParam(name: 'RUN_APPLY', defaultValue: false, description: 'Actually deploy infrastructure')
+        booleanParam(name: 'AUTO_APPROVE', defaultValue: false, description: 'Skip manual approval before apply')
+        string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
     }
 
     environment {
@@ -31,20 +33,23 @@ pipeline {
                     git --version
                     terraform version
                     snyk --version
+                    aws --version
                 '''
             }
         }
 
-        stage('Test - Terraform Init') {
+        stage('Terraform Init') {
             steps {
-                sh '''
-                    set -eux
-                    terraform init -backend=false
-                '''
+                withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
+                    sh '''
+                        set -eux
+                        terraform init -input=false
+                    '''
+                }
             }
         }
 
-        stage('Test - Terraform Validate') {
+        stage('Terraform Validate') {
             steps {
                 sh '''
                     set -eux
@@ -98,16 +103,39 @@ pipeline {
             }
         }
 
-        stage('Plan - Terraform Plan') {
-            when {
-                expression { params.RUN_PLAN }
-            }
+        stage('Terraform Plan') {
             steps {
-                withAWS(credentials: 'aws-prod', region: 'us-east-1') {
+                withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
                     sh '''
                         set -eux
                         aws sts get-caller-identity
-                        terraform plan
+                        terraform plan -input=false -out=tfplan
+                    '''
+                }
+            }
+        }
+
+        stage('Approval') {
+            when {
+                allOf {
+                    expression { params.RUN_APPLY }
+                    expression { !params.AUTO_APPROVE }
+                }
+            }
+            steps {
+                input message: 'Apply Terraform changes?', ok: 'Deploy'
+            }
+        }
+
+        stage('Terraform Apply') {
+            when {
+                expression { params.RUN_APPLY }
+            }
+            steps {
+                withAWS(credentials: 'aws-prod', region: params.AWS_REGION) {
+                    sh '''
+                        set -eux
+                        terraform apply -input=false -auto-approve tfplan
                     '''
                 }
             }
@@ -122,6 +150,7 @@ pipeline {
             echo 'Pipeline failed.'
         }
         always {
+            archiveArtifacts artifacts: 'tfplan', allowEmptyArchive: true
             echo 'Pipeline execution finished.'
         }
     }
