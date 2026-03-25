@@ -11,4 +11,4 @@ resource "aws_vpc" "shadows" {
   tags = {
     Name = "2-shadows"
   }
-}
+} 
