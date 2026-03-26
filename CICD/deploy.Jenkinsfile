@@ -72,23 +72,6 @@ pipeline {
                 }
             }
         }
-        stage('Jira Precheck') {
-            when {
-                expression { params.JIRA_ISSUE?.trim() }
-           }
-           steps {
-               script {
-                   def jiraIssue = jiraGetIssue(
-                   idOrKey: params.JIRA_ISSUE,
-                   site: params.JIRA_SITE,
-                   failOnError: true,
-                   auditLog: true
-            )
-
-            echo "jira precheck ok: ${jiraIssue.data.key}"
-        }
-    }
-}
 
         stage('Manual Approval') {
             when {
