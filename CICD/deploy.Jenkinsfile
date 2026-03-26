@@ -15,14 +15,14 @@ pipeline {
         booleanParam(name: 'AUTO_APPROVE', defaultValue: false, description: 'Skip manual approval before apply')
         string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
         string(name: 'JIRA_ISSUE', defaultValue: '', description: 'Optional Jira ticket key, for example DEV-123')
-        string(name: 'JIRA_SITE', defaultValue: 'YOUR_JIRA_SITE', description: 'Jira site name configured in Jenkins')
-        string(name: 'NOTIFY_EMAIL', defaultValue: 'davekabello@gmail.com', description: 'Email address for approval notifications')
     }
 
     environment {
         TF_IN_AUTOMATION = 'true'
         TF_LOG = 'INFO'
         SNYK_TOKEN = credentials('snyk-token')
+        // if your jira site is configured globally in Jenkins as JIRA_SITE, you can remove the next line
+        JIRA_SITE = 'YOUR_JIRA_SITE'
     }
 
     stages {
@@ -72,6 +72,23 @@ pipeline {
                 }
             }
         }
+        stage('Jira Precheck') {
+            when {
+                expression { params.JIRA_ISSUE?.trim() }
+           }
+           steps {
+               script {
+                   def jiraIssue = jiraGetIssue(
+                   idOrKey: params.JIRA_ISSUE,
+                   site: params.JIRA_SITE,
+                   failOnError: true,
+                   auditLog: true
+            )
+
+            echo "jira precheck ok: ${jiraIssue.data.key}"
+        }
+    }
+}
 
         stage('Manual Approval') {
             when {
@@ -95,7 +112,7 @@ Build URL: ${env.BUILD_URL}
                         ]
 
                         jiraAddComment(
-                            site: params.JIRA_SITE,
+                            site: env.JIRA_SITE,
                             idOrKey: params.JIRA_ISSUE,
                             input: jiraComment
                         )
@@ -103,7 +120,7 @@ Build URL: ${env.BUILD_URL}
                 }
 
                 emailext(
-                    to: params.NOTIFY_EMAIL,
+                    to: 'davekabello@gmail.com',
                     subject: "approval needed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                     body: """Jenkins is waiting for deployment approval.
 
