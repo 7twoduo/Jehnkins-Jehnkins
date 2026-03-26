@@ -16,7 +16,7 @@ pipeline {
         string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
         string(name: 'JIRA_ISSUE', defaultValue: '', description: 'Optional Jira ticket key, for example DEV-123')
         string(name: 'JIRA_SITE', defaultValue: 'YOUR_JIRA_SITE', description: 'Jira site name configured in Jenkins')
-        string(name: 'NOTIFY_EMAIL', defaultValue: 'davekabello@gmail.com', description: 'Email address for approval notifications')
+        string(name: 'NOTIFY_EMAIL', defaultValue: 'your@gmail.com', description: 'Email address for approval notifications')
     }
 
     environment {
