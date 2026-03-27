@@ -13,10 +13,13 @@ pipeline {
         booleanParam(name: 'RUN_PLAN', defaultValue: true, description: 'Run terraform plan')
         booleanParam(name: 'RUN_APPLY', defaultValue: false, description: 'Run terraform apply')
         booleanParam(name: 'AUTO_APPROVE', defaultValue: false, description: 'Skip manual approval before apply')
+        booleanParam(name: 'RUN_CONTAINER_SCAN', defaultValue: false, description: 'Build and scan a container image with Trivy')
         string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
         string(name: 'JIRA_ISSUE', defaultValue: '', description: 'Optional Jira ticket key, for example DEV-123')
         string(name: 'JIRA_SITE', defaultValue: 'YOUR_JIRA_SITE', description: 'Jira site name configured in Jenkins')
         string(name: 'NOTIFY_EMAIL', defaultValue: 'your@gmail.com', description: 'Email address for approval notifications')
+        string(name: 'IMAGE_NAME', defaultValue: 'local/app:jenkins', description: 'Container image name for local scan')
+       
     }
 
     environment {
@@ -72,6 +75,7 @@ pipeline {
                 }
             }
         }
+        
 
         stage('Manual Approval') {
             when {
