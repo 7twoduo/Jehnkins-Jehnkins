@@ -56,7 +56,7 @@ resource "aws_s3_bucket_policy" "public_read" {
   })
 }
 
-resource "aws_s3_object" "S3 Object" {
+resource "aws_s3_object" "s3_object" {
   bucket       = aws_s3_bucket.tiqs_jenkins_bucket.id
   key          = "suge-waf.jpg"
   source       = "${path.module}/images/S3 Object.png"
@@ -74,7 +74,7 @@ resource "aws_s3_object" "Successful-Pipeline" {
   etag = filemd5("${path.module}/images/Successful-Pipeline.png")
 }
 
-resource "aws_s3_object" "terraform code" {
+resource "aws_s3_object" "terraform_code" {
   bucket       = aws_s3_bucket.tiqs_jenkins_bucket.id
   key          = "jenkins-webhook.jpg"
   source       = "${path.module}/images/terraform code.png"
@@ -83,7 +83,7 @@ resource "aws_s3_object" "terraform code" {
   etag = filemd5("${path.module}/images/terraform code.png")
 }
 
-resource "aws_s3_object" "VPC CREATION" {
+resource "aws_s3_object" "VPC_CREATION" {
   bucket       = aws_s3_bucket.tiqs_jenkins_bucket.id
   key          = "vpc-creation.png"
   source       = "${path.module}/images/VPC CREATION.png"
