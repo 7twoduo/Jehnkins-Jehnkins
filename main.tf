@@ -101,6 +101,15 @@ resource "aws_s3_object" "Webhook" {
   etag = filemd5("${path.module}/images/Webhook.png")
 }
 
+resource "aws_s3_object" "Snyk" {
+  bucket       = aws_s3_bucket.tiqs_jenkins_bucket.id
+  key          = "Snyk-Failed.png"
+  source       = "${path.module}/images/Snyk-Failed.png"
+  content_type = "image/png"
+
+  etag = filemd5("${path.module}/images/Snyk-Failed.png")
+}
+
 resource "aws_s3_object" "Armageddon" {
   bucket       = aws_s3_bucket.tiqs_jenkins_bucket.id
   key          = "Armageddon.md"

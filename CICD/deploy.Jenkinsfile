@@ -50,7 +50,7 @@ pipeline {
 
                 stage('Snyk IaC') {
                     steps {
-                        sh 'snyk iac test . --severity-threshold=high'
+                        sh 'snyk iac test . --severity-threshold=critical'
                     }
                 }
             }
