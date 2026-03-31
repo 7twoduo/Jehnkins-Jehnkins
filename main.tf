@@ -29,7 +29,7 @@ resource "aws_s3_bucket" "shadow_bucket" {
   force_destroy = true
 
   tags = {
-    Name = "Gavin's Jenkins Webhook Bucket"
+    Name = "shadow_bucket"
   }
 }
 
