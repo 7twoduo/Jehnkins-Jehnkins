@@ -1,6 +1,6 @@
 terraform {
   # Added the required Terraform CLI version
-  required_version = "~> 1.14.8"
+  required_version = "~> 1.14.7"
 
   required_providers {
     aws = {
