@@ -6,7 +6,7 @@ terraform {
     #use_lockfile = true
   }
 }
- 
+  
   
 resource "aws_vpc" "shadows" {
   cidr_block       = "10.2.0.0/16"
