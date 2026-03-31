@@ -1,8 +1,12 @@
 terraform {
+  # Added the required Terraform CLI version
+  required_version = "~> 1.14.8"
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 1.14.8"
+      # Updated to the latest major version (v6)
+      version = "~> 6.38.0" 
     }
   }
 
@@ -10,9 +14,10 @@ terraform {
     bucket       = "lion-rari"
     key          = "terraform.tfstate"
     region       = "us-east-1"
-    #use_lockfile = true
+    # use_lockfile = true
   }
 }
+
      
    
 provider "aws" {
