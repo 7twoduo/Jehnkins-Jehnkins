@@ -104,8 +104,8 @@ resource "aws_s3_object" "Webhook" {
 resource "aws_s3_object" "Armageddon" {
   bucket       = aws_s3_bucket.tiqs_jenkins_bucket.id
   key          = "Armageddon.md"
-  source       = "${path.module}/images/Armageddon.md"
+  source       = "${path.module}/Armageddon.md"
   content_type = "text/markdown"
 
-  etag = filemd5("${path.module}/images/Armageddon.md")
+  etag = filemd5("${path.module}/Armageddon.md")
 }
