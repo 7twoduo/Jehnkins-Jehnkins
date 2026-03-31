@@ -63,7 +63,7 @@ resource "aws_s3_bucket_policy" "public_read" {
 
 resource "aws_s3_object" "s3_object" {
   bucket       = aws_s3_bucket.shadow_bucket.id
-  key          = "suge-waf.jpg"
+  key          = "S3 Object.png"
   source       = "${path.module}/images/S3 Object.png"
   content_type = "image/png"
 
