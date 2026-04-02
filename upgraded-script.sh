@@ -117,7 +117,7 @@ configuration-as-code-secret-ssm
 aws-codepipeline
 jenkins-cloudformation-plugin
 aws-sam
-Pipeline Graph View
+pipeline-graph-view
 terraform
 
 kubernetes
